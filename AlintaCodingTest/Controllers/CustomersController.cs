@@ -28,7 +28,6 @@ namespace AlintaCodingTest.Controllers
             _logger = logger;
         }
 
-        //Get Customers
         [ProducesResponseType(typeof(IEnumerable<CustomerReadDto>), StatusCodes.Status200OK)]
         [HttpGet()]
         public async Task<IEnumerable<CustomerReadDto>> GetCustomers(string name = "")

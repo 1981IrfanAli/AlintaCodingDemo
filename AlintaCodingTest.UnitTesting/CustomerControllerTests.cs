@@ -37,7 +37,7 @@ namespace AlintaCodingTest.UnitTesting
         }
 
         [Fact]
-        public async Task GetCustomerById_WithUnexistingCustomer_ReturnsNotFound()
+        public async Task GetCustomerById_WithUnexistingCustomer_ReturnsNull()
         {
             // Arrange
             repositoryStub.Setup(repo => repo.GetCustomerById(It.IsAny<Guid>()))
@@ -49,7 +49,7 @@ namespace AlintaCodingTest.UnitTesting
             var result = await controller.GetCustomerById(Guid.NewGuid());
 
             // Assert
-            result.Value.Should().BeOfType<NotFoundResult>();
+            result.Value.Should().BeNull();
         }
 
         [Fact]
@@ -99,7 +99,7 @@ namespace AlintaCodingTest.UnitTesting
                 new Customer(){ FirstName = "Steve", LastName = "Scott", DateOfBirth= DateTime.Now, Id = Guid.NewGuid()},
             };
 
-            var nameToMatch = "Irfan";
+            var nameToMatch = "Nothing";
 
             repositoryStub.Setup(repo => repo.GetCustomers(""))
                 .ReturnsAsync(allCustomer);
@@ -110,8 +110,8 @@ namespace AlintaCodingTest.UnitTesting
             IEnumerable<CustomerReadDto> foundCustomers = await controller.GetCustomers(nameToMatch);
 
             // Assert
-            foundCustomers.Should().OnlyContain(
-                item => item.FirstName == allCustomer[0].FirstName);
+            foundCustomers.Should().HaveCountLessThanOrEqualTo(0);
+
         }
 
         [Fact]
