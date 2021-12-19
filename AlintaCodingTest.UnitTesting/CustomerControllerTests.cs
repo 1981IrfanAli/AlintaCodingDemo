@@ -56,7 +56,7 @@ namespace AlintaCodingTest.UnitTesting
         public async Task GetCustomerById_WithExistingCustomer_ReturnsExpectedCustomer()
         {
             // Arrange
-            Customer expectedCustomer = CreateCustomer();
+            Customer expectedCustomer = GetAllCustomers().FirstOrDefault();
 
             repositoryStub.Setup(repo => repo.GetCustomerById(It.IsAny<Guid>()))
                 .ReturnsAsync(expectedCustomer);
@@ -74,7 +74,7 @@ namespace AlintaCodingTest.UnitTesting
         public async Task GetCustomers_WithExistingCustomers_ReturnsAllCustomers()
         {
             // Arrange
-            var expectedItems = new[] { CreateCustomer(), CreateCustomer(), CreateCustomer() };
+            var expectedItems = GetAllCustomers();
 
             repositoryStub.Setup(repo => repo.GetCustomers(string.Empty))
                 .ReturnsAsync(expectedItems);
@@ -92,17 +92,12 @@ namespace AlintaCodingTest.UnitTesting
         public async Task GetCustomers_WithMatchingCustomers_ReturnsMatchingCustomers()
         {
             // Arrange
-            var allCustomer = new[]
-            {
-                new Customer(){ FirstName = "Irfan", LastName = "Ali", DateOfBirth= DateTime.Now, Id = Guid.NewGuid()},
-                new Customer(){ FirstName = "John", LastName = "Mark", DateOfBirth= DateTime.Now, Id = Guid.NewGuid()},
-                new Customer(){ FirstName = "Steve", LastName = "Scott", DateOfBirth= DateTime.Now, Id = Guid.NewGuid()},
-            };
 
+            var allCustomers = GetAllCustomers();
             var nameToMatch = "Nothing";
 
-            repositoryStub.Setup(repo => repo.GetCustomers(""))
-                .ReturnsAsync(allCustomer);
+            repositoryStub.Setup(repo => repo.GetCustomers(String.Empty))
+                .ReturnsAsync(allCustomers);
 
             var controller = new CustomersController(repositoryStub.Object, _mapper, loggerStub.Object);
 
@@ -192,6 +187,18 @@ namespace AlintaCodingTest.UnitTesting
                 LastName = Guid.NewGuid().ToString(),
                 DateOfBirth = DateTime.Now
             };
+        }
+
+        public IEnumerable<Customer> GetAllCustomers()
+        {
+            var customers = new List<Customer>
+            {
+                new Customer{ FirstName = "Irfan", LastName = "Ali", DateOfBirth= DateTime.Now, Id = Guid.NewGuid()},
+                new Customer{ FirstName = "John", LastName = "Mark", DateOfBirth= DateTime.Now, Id = Guid.NewGuid()},
+                new Customer{ FirstName = "Steve", LastName = "Scott", DateOfBirth= DateTime.Now, Id = Guid.NewGuid()}
+            };
+
+            return customers;
         }
 
     }
