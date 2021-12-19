@@ -1,8 +1,10 @@
 ﻿using AlintaCodingTest.DbContexts;
 using AlintaCodingTest.Entities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AlintaCodingTest.Services
 {
@@ -15,11 +17,49 @@ namespace AlintaCodingTest.Services
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IEnumerable<Customer> GetCustomers()
+        public async Task<IEnumerable<Customer>> GetCustomers()
         {
-            return _context.Customers.ToList<Customer>();
+            return await _context.Customers.ToListAsync();
         }
 
+        public async Task<Customer> GetCustomerById(Guid customerId)
+        {
+            if (customerId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(customerId));
+            }
+
+            return await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+        }
+
+        public async Task<IEnumerable<Customer>> GetCustomerByIds(IEnumerable<Guid> customerIds)
+        {
+            return await _context.Customers.Where(c => customerIds.Contains(c.Id)).ToListAsync();
+        }
+
+        public void AddCustomer(Customer customer)
+        {
+            if (customer == null)
+            {
+                throw new ArgumentNullException(nameof(customer));
+            }
+
+            _context.Customers.Add(customer);
+        }
+
+        public void DeleteCustomer(Customer customer)
+        {
+            if (customer == null)
+            {
+                throw new ArgumentNullException(nameof(customer));
+            }
+            _context.Customers.Remove(customer);
+        }
+
+        public async Task<bool> SaveChangesAsync()
+        {
+            return (await _context.SaveChangesAsync() > 0);
+        }
 
         public void Dispose()
         {
@@ -33,6 +73,11 @@ namespace AlintaCodingTest.Services
             {
                 // dispose resources when needed
             }
+        }
+
+        public void UpdateCustomer(Customer customer)
+        {
+            //Noting
         }
     }
 }
