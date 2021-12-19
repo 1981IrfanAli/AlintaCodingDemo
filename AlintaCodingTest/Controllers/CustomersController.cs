@@ -1,9 +1,11 @@
-﻿using AlintaCodingTest.ModelBinders;
+﻿using AlintaCodingTest.Entities;
+using AlintaCodingTest.ModelBinders;
 using AlintaCodingTest.Models;
 using AlintaCodingTest.Services;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,54 +19,55 @@ namespace AlintaCodingTest.Controllers
     {
         private readonly ICustomerRepository _customerRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<CustomersController> _logger;
 
-        public CustomersController(ICustomerRepository customerRepository, IMapper mapper)
+        public CustomersController(ICustomerRepository customerRepository, IMapper mapper, ILogger<CustomersController> logger)
         {
             _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _logger = logger;
         }
 
         //Get Customers
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IEnumerable<CustomerReadDto>), StatusCodes.Status200OK)]
         [HttpGet()]
-        public async Task<IActionResult> GetCustomers()
+        public async Task<IEnumerable<CustomerReadDto>> GetCustomers(string name = "")
         {
-            var customerRepo = await _customerRepository.GetCustomers();
-            return Ok(_mapper.Map<IEnumerable<CustomerReadDto>>(customerRepo));
+            var customerRepo = await _customerRepository.GetCustomers(name);
+            _logger.LogInformation($"{DateTime.UtcNow.ToString("hh:mm:ss")}: Retrieved {customerRepo.Count()} customers");
+            return _mapper.Map<IEnumerable<CustomerReadDto>>(customerRepo);
         }
+
 
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("({customerIds})", Name = "GetCustomerCollection")]
-        public async Task<IActionResult> GetCustomerCollection([ModelBinder(BinderType = typeof(ArrayModelBinder))] IEnumerable<Guid> customerIds)
+        [HttpGet("{id}", Name = "GetCustomerById")]
+        public async Task<ActionResult<CustomerReadDto>> GetCustomerById(Guid id)
         {
-            var customerEntities = await _customerRepository.GetCustomerByIds(customerIds);
-
-            if (customerIds.Count() != customerEntities.Count())
+            var customer = await _customerRepository.GetCustomerById(id);
+            if (customer is null)
             {
                 return NotFound();
             }
-
-            return Ok(customerEntities);
+            _logger.LogInformation($"{DateTime.UtcNow.ToString("hh:mm:ss")}: Retrieved {customer.Id} customer");
+            return _mapper.Map<CustomerReadDto>(customer);
         }
 
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("{customerId}", Name = "GetCustomerById")]
-        public async Task<IActionResult> GetCustomerById(Guid customerId)
-        {
-            var customer = await _customerRepository.GetCustomerById(customerId);
-            if (customer == null)
-            {
-                return NotFound();
-            }
-            
-            return Ok(_mapper.Map<CustomerReadDto>(customer));
-        }
-
-        //Add Customers collecction
         [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HttpPost]
+        public async Task<ActionResult<CustomerReadDto>> AddCustomer(CustomerCreateDto customerCreateDto)
+        {
+            var customer = _mapper.Map<Customer>(customerCreateDto);
+            _customerRepository.AddCustomer(customer);
+            await _customerRepository.SaveChangesAsync();
+
+            _logger.LogInformation($"{DateTime.UtcNow.ToString("hh:mm:ss")}: Created {customer.Id} customer");
+
+            var commandReadDto = _mapper.Map<CustomerReadDto>(customer);
+            return CreatedAtRoute(nameof(GetCustomerById), new { Id = commandReadDto.Id }, commandReadDto);
+        }
+
+        [ProducesResponseType(StatusCodes.Status201Created)]
         [HttpPost]
         public async Task<IActionResult> AddCustomers(IEnumerable<CustomerCreateDto> customers)
         {
@@ -84,34 +87,13 @@ namespace AlintaCodingTest.Controllers
             return CreatedAtRoute("GetCustomerCollection", new { customerIds }, customerToReturn);
         }
 
-        //Update Customers collection
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [HttpPut]
-        public async Task<IActionResult> UpdateCustomers(IEnumerable<CustomerUpdateDto> customers)
-        {
-            foreach (var customerDto in customers)
-            {
-                var customerEntity = await _customerRepository.GetCustomerById(customerDto.Id);
-                if (customerEntity == null)
-                {
-                    return NotFound();
-                }
-                _mapper.Map(customerDto, customerEntity);
-                _customerRepository.UpdateCustomer(customerEntity);
-            }
-            await _customerRepository.SaveChangesAsync();
-            return NoContent();
-        }
-
-        //Update individual customer
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [HttpPut("{customerId}")]
         public async Task<IActionResult> UpdateCustomer(Guid customerId, CustomerUpdateDto customerUpdateDto)
         {
             var customer = await _customerRepository.GetCustomerById(customerId);
-            if (customer == null)
+            if (customer is null)
             {
                 return NotFound();
             }
@@ -121,37 +103,19 @@ namespace AlintaCodingTest.Controllers
 
             await _customerRepository.SaveChangesAsync();
 
-            return NoContent();
-        }
+            _logger.LogInformation($"{DateTime.UtcNow.ToString("hh:mm:ss")}: Updated {customer.Id} customer");
 
-        //Delete Customers collection 
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [HttpDelete]
-        public async Task<IActionResult> DeleteCustomers(IEnumerable<CustomerDeleteDto> customers)
-        {
-            foreach (var customerDto in customers)
-            {
-                var customerEntity = await _customerRepository.GetCustomerById(customerDto.Id);
-                if (customerEntity == null)
-                {
-                    return NotFound();
-                }
-                _customerRepository.DeleteCustomer(customerEntity);
-            }
-            await _customerRepository.SaveChangesAsync();
             return NoContent();
         }
 
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        //Delete individual customer
         [HttpDelete("{customerId}")]
         public async Task<IActionResult> DeleteCustomer(Guid customerId)
         {
             var customer = await _customerRepository.GetCustomerById(customerId);
 
-            if (customer == null)
+            if (customer is null)
             {
                 return NotFound();
             }
@@ -159,6 +123,8 @@ namespace AlintaCodingTest.Controllers
             _customerRepository.DeleteCustomer(customer);
 
             await _customerRepository.SaveChangesAsync();
+
+            _logger.LogInformation($"{DateTime.UtcNow.ToString("hh:mm:ss")}: Deleted {customerId} customer");
 
             return NoContent();
         }

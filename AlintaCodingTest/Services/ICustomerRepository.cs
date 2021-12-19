@@ -7,7 +7,7 @@ namespace AlintaCodingTest.Services
 {
     public interface ICustomerRepository
     {
-        Task<IEnumerable<Customer>> GetCustomers();
+        Task<IEnumerable<Customer>> GetCustomers(string name);
         Task<Customer> GetCustomerById(Guid customerId);
         Task<IEnumerable<Customer>> GetCustomerByIds(IEnumerable<Guid> customerIds);
         void AddCustomer(Customer customer);

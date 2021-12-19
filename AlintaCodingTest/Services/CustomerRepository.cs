@@ -17,9 +17,11 @@ namespace AlintaCodingTest.Services
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IEnumerable<Customer>> GetCustomers()
+        public async Task<IEnumerable<Customer>> GetCustomers(string name)
         {
-            return await _context.Customers.ToListAsync();
+            return await _context.Customers
+                    .Where(c=> c.FirstName.Contains(name) || c.LastName.Contains(name))
+                    .ToListAsync();
         }
 
         public async Task<Customer> GetCustomerById(Guid customerId)
