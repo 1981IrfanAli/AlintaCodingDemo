@@ -53,9 +53,13 @@ namespace AlintaCodingTest.Controllers
         }
 
         [ProducesResponseType(StatusCodes.Status201Created)]
-        [HttpPost(Name = "AddCustomer")]
+        [HttpPost()]
         public async Task<ActionResult<CustomerReadDto>> AddCustomer(CustomerCreateDto customerCreateDto)
         {
+            if (_customerRepository.CustomerExists(customerCreateDto.Id)) {
+                return BadRequest($"Customer already exits.Customer Id: { customerCreateDto.Id}");
+            }
+
             var customer = _mapper.Map<Customer>(customerCreateDto);
             _customerRepository.AddCustomer(customer);
             await _customerRepository.SaveChangesAsync();
@@ -63,7 +67,7 @@ namespace AlintaCodingTest.Controllers
             _logger.LogInformation($"{DateTime.UtcNow.ToString("hh:mm:ss")}: Created {customer.Id} customer");
 
             var commandReadDto = _mapper.Map<CustomerReadDto>(customer);
-            return CreatedAtRoute(nameof(GetCustomerById), new { Id = commandReadDto.Id }, commandReadDto);
+            return CreatedAtRoute(nameof(GetCustomerById), new { customerId = commandReadDto.Id }, commandReadDto);
         }
 
         [ProducesResponseType(StatusCodes.Status404NotFound)]

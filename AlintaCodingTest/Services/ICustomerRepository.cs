@@ -14,5 +14,6 @@ namespace AlintaCodingTest.Services
         void UpdateCustomer(Customer customer);
         void DeleteCustomer(Customer customer);
         Task<bool> SaveChangesAsync();
+        bool CustomerExists(Guid authorId);
     }
 }

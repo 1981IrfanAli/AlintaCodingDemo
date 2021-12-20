@@ -81,5 +81,15 @@ namespace AlintaCodingTest.Services
         {
             //Noting
         }
+
+        public bool CustomerExists(Guid customerId)
+        {
+            if (customerId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(customerId));
+            }
+
+            return  _context.Customers.Any(a => a.Id == customerId);
+        }
     }
 }
