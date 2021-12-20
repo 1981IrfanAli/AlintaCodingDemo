@@ -38,12 +38,12 @@ namespace AlintaCodingTest.Controllers
         }
 
 
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CustomerReadDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("{id}", Name = "GetCustomerById")]
-        public async Task<ActionResult<CustomerReadDto>> GetCustomerById(Guid id)
+        [HttpGet("{customerId}", Name = "GetCustomerById")]
+        public async Task<ActionResult<CustomerReadDto>> GetCustomerById(Guid customerId)
         {
-            var customer = await _customerRepository.GetCustomerById(id);
+            var customer = await _customerRepository.GetCustomerById(customerId);
             if (customer is null)
             {
                 return NotFound();
@@ -53,7 +53,7 @@ namespace AlintaCodingTest.Controllers
         }
 
         [ProducesResponseType(StatusCodes.Status201Created)]
-        [HttpPost]
+        [HttpPost(Name = "AddCustomer")]
         public async Task<ActionResult<CustomerReadDto>> AddCustomer(CustomerCreateDto customerCreateDto)
         {
             var customer = _mapper.Map<Customer>(customerCreateDto);
@@ -64,26 +64,6 @@ namespace AlintaCodingTest.Controllers
 
             var commandReadDto = _mapper.Map<CustomerReadDto>(customer);
             return CreatedAtRoute(nameof(GetCustomerById), new { Id = commandReadDto.Id }, commandReadDto);
-        }
-
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [HttpPost]
-        public async Task<IActionResult> AddCustomers(IEnumerable<CustomerCreateDto> customers)
-        {
-            var customerEntities = _mapper.Map<IEnumerable<Entities.Customer>>(customers);
-
-            foreach (var customerEntity in customerEntities)
-            {
-                _customerRepository.AddCustomer(customerEntity);
-            }
-
-            await _customerRepository.SaveChangesAsync();
-
-            var customerToReturn = await _customerRepository.GetCustomerByIds(customerEntities.Select(b => b.Id).ToList());
-
-            var customerIds = string.Join(",", customerToReturn.Select(a => a.Id));
-
-            return CreatedAtRoute("GetCustomerCollection", new { customerIds }, customerToReturn);
         }
 
         [ProducesResponseType(StatusCodes.Status404NotFound)]

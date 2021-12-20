@@ -1,4 +1,5 @@
 using AlintaCodingTest.DbContexts;
+using AlintaCodingTest.ExceptionMiddleware;
 using AlintaCodingTest.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -54,6 +55,8 @@ namespace AlintaCodingTest
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AlintaCodingTest v1"));
             }
+
+            app.UseMiddleware(typeof(ExceptionHandlingMiddleware));
 
             app.UseRouting();
 
