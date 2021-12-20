@@ -1,4 +1,5 @@
-﻿using AlintaCodingTest.Models;
+﻿using AlintaCodingTest.ModelBinders;
+using AlintaCodingTest.Models;
 using AlintaCodingTest.Services;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
@@ -39,11 +40,24 @@ namespace AlintaCodingTest.Controllers
 
             await _customerRepository.SaveChangesAsync();
 
-            var customerToReturn = await _customerRepository.GetCustomerByIds(customerEntities.Select(b => b.Id).ToList());
+            var customerCollectionToReturn = _mapper.Map<IEnumerable<CustomerReadDto>>(customerEntities);
+            var idsAsString = string.Join(",", customerCollectionToReturn.Select(a => a.Id));
+            return CreatedAtRoute("GetCustomerCollection", new { customerIds = idsAsString }, customerCollectionToReturn);
+        }
 
-            var customerIds = string.Join(",", customerToReturn.Select(a => a.Id));
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpGet("({customerIds})", Name = "GetCustomerCollection")]
+        public async Task<IActionResult> GetCustomerCollection([ModelBinder(BinderType = typeof(ArrayModelBinder))] IEnumerable<Guid> customerIds)
+        {
+            var customerEntities = await _customerRepository.GetCustomerByIds(customerIds);
 
-            return CreatedAtRoute("GetCustomerCollection", new { customerIds }, customerToReturn);
+            if (customerIds.Count() != customerEntities.Count())
+            {
+                return NotFound();
+            }
+
+            return Ok(customerEntities);
         }
 
         [ProducesResponseType(StatusCodes.Status404NotFound)]
